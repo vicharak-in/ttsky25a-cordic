@@ -8,7 +8,8 @@ module cordic_fsm #(
     input  wire                    sclk,
     input  wire                    mosi,
     output wire                    miso,
-    input  wire                    cs_n
+    input  wire                    cs_n,
+    output reg                     data_ready 
 );
 
     // SPI interface
@@ -83,12 +84,14 @@ module cordic_fsm #(
             r_spi_tx_data      <= 0;
             valid_cordic_angle <= 0;
             spi_tx_data        <= 0;
+            data_ready         <= 0;
         end else begin
             case (state)
                 S_IDLE: begin
                     valid_cordic_angle <= 0;
                     tx_byte_count      <= 0;
                     rx_byte_count      <= 0;
+                    data_ready         <= 0;
                     if (spi_rx_valid) begin
                         r_spi_rx_data[7:0] <= spi_rx_data;
                         rx_byte_count <= 1;
@@ -113,6 +116,7 @@ module cordic_fsm #(
                     if (o_valid_out) begin
                         r_spi_tx_data <= {out_alpha, out_costheta, out_sintheta}; // 56 bits
                         state <= S_LOAD;
+                        data_ready <= 1'b1;
                     end
                 end
 
@@ -136,6 +140,7 @@ module cordic_fsm #(
                 S_DONE: begin
                     if (cs_n) begin
                         state <= S_IDLE;
+                        data_ready <= 1'b0;
                     end
                 end
 
